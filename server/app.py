@@ -20,23 +20,54 @@ def home():
 
 @app.route('/heroes')
 def heroes():
-    return ''
+    heroes = Hero.query.all()
+    data = [hero.to_dict() for hero in heroes]
+    return make_response(jsonify(data), 200)
 
 @app.route('/heroes/<int:id>')
 def hero_by_id(id):
-    return ''
+    hero = Hero.query.filter(Hero.id == id).first()
+    if not hero:
+        return make_response(jsonify({
+            'error': 'Hero not found'
+        }))
+    return make_response(jsonify(hero.to_dict()), 200)
+
 
 @app.route('/powers')
 def powers():
-    return ''
+    powers = Power.query.all()
+    data = [power.to_dict() for power in powers]
+    return make_response(jsonify(data), 200)
 
-@app.route('/powers/<int:id>')
+@app.route('/powers/<int:id>', methods=['GET', 'PATCH'])
 def power_by_id(id):
-    return ''
+    power = Power.query.filter(Power.id == id).first()
+    if not power:
+        return make_response(jsonify({
+            'error': 'Power not found'
+        }))
+    if request.method == 'GET':
+        return make_response(jsonify(power.to_dict()), 200)
+    elif request.method == 'PATCH':
+        data = request.get_json()
+        for field, value in data.items():
+            setattr(power, field, value)
+        db.session.add(power)
+        db.session.commit()
+        return make_response(jsonify(power.to_dict()), 200)
 
-@app.route('/hero_powers')
+@app.route('/hero_powers', methods=['POST'])
 def hero_powers():
-    return ''
+    data = request.get_json()
+    new_hp = HeroPower(
+        strength=data['strength'],
+        power_id=data['power_id'],
+        hero_id=data['hero_id']
+    )
+    db.session.add(new_hp)
+    db.session.commit()
+    return make_response(jsonify(new_hp.to_dict()), 201)
 
 
 if __name__ == '__main__':
